@@ -1,0 +1,10 @@
+
+is_installed = str(local('kubectl api-resources | grep postgres | wc -l')).strip()
+if is_installed == '0':
+  local('curl -fsSL https://raw.githubusercontent.com/kubedb/cli/0.12.0/hack/deploy/kubedb.sh | bash')
+
+k8s_yaml('postgres.yaml')
+k8s_resource(new_name='postgres',
+             objects=['quick-postgres'],
+             extra_pod_selectors=[{'kubedb.com/name': 'quick-postgres'}],
+             port_forwards=5432)
