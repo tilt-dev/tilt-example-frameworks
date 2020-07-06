@@ -1,0 +1,36 @@
+load('ext://helm_remote', 'helm_remote')
+
+helm_remote('airflow',
+            repo_url='https://helm.astronomer.io',
+            repo_name='astronomer',
+            namespace='airflow',
+            set=[
+              'images.airflow.repository=example-dags',
+              'images.airflow.tag=dev',
+              'executor=LocalExecutor',
+            ],
+)
+
+k8s_resource('airflow-webserver', port_forwards=8080)
+k8s_resource('airflow-create-user', resource_deps=['airflow-postgresql'])
+
+docker_build(
+  'example-dags',
+  '.',
+
+  # This must match the respository/tag in the helm chart.  When Airflow deploys
+  # separate worker pods (like the KubernetesExecutor), it uses this hard-coded
+  # tag.
+  extra_tag='example-dags:dev',
+
+  # NOTE: When we're using Airflow with the LocalExecutor, it's OK to
+  # live_update the DAGs in the airflow pod.
+  #
+  # When we're using Airflow with other executors (like the KubernetesExecutor),
+  # Airflow will create a new pod for each task, so this update strategy won't
+  # work.
+  live_update=[
+    sync('./dags', '/usr/local/airflow/dags'),
+  ])
+
+secret_settings(disable_scrub=True)
