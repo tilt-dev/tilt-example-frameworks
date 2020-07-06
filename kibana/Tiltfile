@@ -1,0 +1,27 @@
+load('ext://helm_remote', 'helm_remote')
+load('ext://namespace', 'namespace_create')
+
+namespace_create('elastic-system')
+
+operator_yaml = local('curl -sSL https://download.elastic.co/downloads/eck/1.1.2/all-in-one.yaml')
+k8s_yaml(operator_yaml)
+
+k8s_yaml('es.yaml')
+k8s_yaml('kibana.yaml')
+
+k8s_resource(new_name='elasticsearch',
+             objects=['quickstart:elasticsearch'],
+             extra_pod_selectors=[{'elasticsearch.k8s.elastic.co/cluster-name': 'quickstart'}],
+             resource_deps=['elastic-operator'])
+k8s_resource(new_name='kibana',
+             objects=['quickstart:kibana'],
+             extra_pod_selectors=[{'kibana.k8s.elastic.co/name': 'quickstart'}],
+             resource_deps=['elastic-operator', 'elasticsearch'],
+             port_forwards=5601)
+
+local_resource('kibana-password',
+               'echo "USER: elastic";' +
+               'echo "PASSWORD:";' +
+               'kubectl get secret quickstart-es-elastic-user -o=jsonpath="{.data.elastic}" | base64 --decode; echo',
+               trigger_mode=TRIGGER_MODE_MANUAL,
+               auto_init=False)
