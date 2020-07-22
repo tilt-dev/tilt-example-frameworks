@@ -5,15 +5,21 @@ helm_remote('airflow',
             repo_name='astronomer',
             namespace='airflow',
             set=[
+              # Inject the Docker Image containing the Airflow DAG
               'images.airflow.repository=example-dags',
               'images.airflow.tag=dev',
               'executor=LocalExecutor',
+
+              # Inject the Docker Image run by the KuberentesPodOperator
+              'env[0].name=IMAGE_TASK',
+              'env[0].value=example-task',
             ],
 )
 
 k8s_resource('airflow-webserver', port_forwards=8080)
 k8s_resource('airflow-create-user', resource_deps=['airflow-postgresql'])
 
+# A Docker image containing the Airflow DAG.
 docker_build(
   'example-dags',
   '.',
@@ -22,6 +28,8 @@ docker_build(
   # separate worker pods (like the KubernetesExecutor), it uses this hard-coded
   # tag.
   extra_tag='example-dags:dev',
+
+  ignore=['./tasks'],
 
   # NOTE: When we're using Airflow with the LocalExecutor, it's OK to
   # live_update the DAGs in the airflow pod.
@@ -32,5 +40,15 @@ docker_build(
   live_update=[
     sync('./dags', '/usr/local/airflow/dags'),
   ])
+
+# A Docker image run by the KubernetesPodOperator
+docker_build(
+  'example-task',
+  './tasks',
+  dockerfile='tasks/Dockerfile',
+
+  # Tells Tilt to inject the image name as an environment
+  # variable into the airflow containers.
+  match_in_env_vars=True)
 
 secret_settings(disable_scrub=True)
