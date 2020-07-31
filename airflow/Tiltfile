@@ -8,6 +8,12 @@ helm_remote('airflow',
               # Inject the Docker Image containing the Airflow DAG
               'images.airflow.repository=example-dags',
               'images.airflow.tag=dev',
+
+              'webserver.livenessProbe.timeoutSeconds=300',
+              'webserver.livenessProbe.failureThreshold=60',
+              'webserver.readinessProbe.timeoutSeconds=300',
+              'webserver.readinessProbe.failureThreshold=60',
+
               'executor=LocalExecutor',
 
               # Inject the Docker Image run by the KuberentesPodOperator
