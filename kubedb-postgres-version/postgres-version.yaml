@@ -1,0 +1,17 @@
+apiVersion: catalog.kubedb.com/v1alpha1
+kind: PostgresVersion
+metadata:
+  name: custom-10.6
+  labels:
+    app: kubedb
+spec:
+  db:
+    image: custom-postgres-image
+  exporter:
+    image: kubedb/postgres_exporter:v0.4.7
+  podSecurityPolicies:
+    databasePolicyName: postgres-db
+    snapshotterPolicyName: postgres-snapshot
+  tools:
+    image: kubedb/postgres-tools:10.6
+  version: "10.6"

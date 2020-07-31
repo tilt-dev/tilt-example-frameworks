@@ -1,0 +1,16 @@
+
+is_installed = str(local('kubectl api-resources | grep postgres | wc -l')).strip()
+if is_installed == '0':
+  local('curl -fsSL https://raw.githubusercontent.com/kubedb/cli/0.12.0/hack/deploy/kubedb.sh | bash')
+
+docker_build('custom-postgres-image', '.')
+
+k8s_yaml('postgres-version.yaml')
+k8s_yaml('postgres.yaml')
+k8s_resource(new_name='postgres',
+             objects=['quick-custom-postgres'],
+             extra_pod_selectors=[{'kubedb.com/name': 'quick-custom-postgres'}],
+             port_forwards=5432,
+             resource_deps=['custom-10.6'])
+
+k8s_kind('PostgresVersion', image_json_path='{.spec.db.image}', pod_readiness='ignore')
