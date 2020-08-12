@@ -8,6 +8,7 @@ helm_remote('airflow',
               # Inject the Docker Image containing the Airflow DAG
               'images.airflow.repository=example-dags',
               'images.airflow.tag=dev',
+              'defaultAirflowTag=1.10.10-4-alpine3.10',
 
               'webserver.livenessProbe.timeoutSeconds=300',
               'webserver.livenessProbe.failureThreshold=60',
