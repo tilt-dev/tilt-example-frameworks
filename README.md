@@ -8,3 +8,4 @@ A collection of examples of how to use Tilt with different frameworks
 - [kubedb-postgres](kubedb-postgres) - Expose a Postgres server running on Kubernetes.
 - [kubedb-postgres-version](kubedb-postgres-version) - Expose a Postgres server running a custom Postgres version running on Kubernetes.
 - [kibana](kibana) - Expose an ElasticSearch cluster with a Kibana frontend running on Kubernetes.
+- [prometheus](prometheus) - Expose a Prometheus server, managed by the Prometheus Operator

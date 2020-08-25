@@ -1,0 +1,61 @@
+
+# Download the manifest and apply it.
+bundle = local("curl -fsSL https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.41.1/bundle.yaml", quiet=True)
+k8s_yaml(bundle)
+
+def name(c):
+  return c['metadata']['name']
+
+def decode(yaml):
+  resources = decode_yaml_stream(bundle)
+
+  # workaround a bug in decode_yaml_stream where it returns duplicates
+  # This bug has been fixed in Tilt v0.17.3+
+  filtered = []
+  names = {}
+  for r in resources:
+    if r == None:
+      continue
+
+    n = '%s:%s' % (name(r), r['kind'])
+    if n in names:
+      continue
+
+    names[n] = True
+    filtered.append(r)
+
+  return filtered
+
+crds = [r for r in decode(bundle) if (r['kind'] == 'CustomResourceDefinition')]
+
+if len(crds):
+  # Deploy the prometheus CRDs as a separate resource, after the operator is
+  # available.
+  k8s_resource(
+    new_name='prometheus-crds',
+    objects = [('%s' % name(c)) for c in crds],
+    resource_deps=['uncategorized', 'prometheus-operator'])
+
+  # Wait until the CRDs are ready.
+  local_resource(
+    'prometheus-crds-ready',
+    cmd=' && '.join([('kubectl wait --for=condition=Established crd %s' % name(c)) for c in crds]),
+    resource_deps=['prometheus-crds'])
+
+k8s_yaml([
+  'prometheus.yaml',
+  'service.yaml',
+  'service-account.yaml',
+  'cluster-role.yaml',
+  'cluster-role-binding.yaml',
+])
+
+k8s_resource(
+  new_name='prometheus',
+  objects = [
+    'my-prometheus:Prometheus',
+    'my-prometheus:Service',
+  ],
+  extra_pod_selectors={'prometheus': 'my-prometheus'},
+  port_forwards=['9090'],
+  resource_deps=['prometheus-crds-ready'])
