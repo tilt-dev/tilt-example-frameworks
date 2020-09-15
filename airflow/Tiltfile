@@ -1,4 +1,7 @@
 load('ext://helm_remote', 'helm_remote')
+load('ext://namespace', 'namespace_create')
+
+namespace_create('airflow')
 
 helm_remote('airflow',
             repo_url='https://helm.astronomer.io',
